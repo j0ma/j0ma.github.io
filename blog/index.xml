@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Blog on Jonne Sälevä</title>
+    <link>https://cs.brandeis.edu/~jonne/blog/</link>
+    <description>Recent content in Blog on Jonne Sälevä</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 25 Jul 2022 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://cs.brandeis.edu/~jonne/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Why UNIX filters are cool</title>
+      <link>https://cs.brandeis.edu/~jonne/blog/002-unix-filters/</link>
+      <pubDate>Mon, 25 Jul 2022 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/blog/002-unix-filters/</guid>
+      <description>&lt;p&gt;When working on Linux, &lt;em&gt;filters&lt;/em&gt; are a topic that often comes up. But what are they?&lt;/p&gt;&#xA;&lt;p&gt;Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.&lt;/p&gt;&#xA;&lt;p&gt;Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.&lt;/p&gt;&#xA;&lt;p&gt;What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.&#xA;They are a great example of the UNIX philosophy principle&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>When working on Linux, <em>filters</em> are a topic that often comes up. But what are they?</p>
+<p>Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.</p>
+<p>Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.</p>
+<p>What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle</p>
+<blockquote>
+*"Do one thing and do it well."*
+</blockquote>
+<p>which is often even given as a <em>definition</em> for UNIX philosophy itself.</p>
+<h3 id="converting-tsv-to-jsonl">Converting TSV to JSON(L)</h3>
+<p>In my work, I&rsquo;ve frequently got TSV data which would be easier to work with if it were in JSON(L).
+Finally, I found an easy conversion tool: <a href="https://visidata.org"><code>visidata</code></a>.</p>
+<p>Using <code>visidata</code>, we can write the following filter that takes input from STDIN, as well as some optional arguments, and outputs a neatly formatted JSON document:</p>
+
+
+
+
+
+<pre tabindex="0"><code>visidata \
+    -b --save-filetype &#34;jsonl&#34; \
+    &lt; ${1:-/dev/stdin} 2&gt;/dev/null \
+    | jq -c</code></pre><p>We can save this under <code>tsv2jsonl</code> and place it somewhere in our <code>$PATH</code>.</p>
+<p>If we have a TSV file like</p>
+
+
+
+
+
+<pre tabindex="0"><code>x	y
+foo	bar
+faa	ber
+fuu	box</code></pre><p>saved under <code>my_file.tsv</code>, then we can convert it to JSON by doing:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl
+
+{&#34;x&#34;:&#34;foo&#34;,&#34;y&#34;:&#34;bar&#34;}
+{&#34;x&#34;:&#34;faa&#34;,&#34;y&#34;:&#34;ber&#34;}
+{&#34;x&#34;:&#34;fuu&#34;,&#34;y&#34;:&#34;box&#34;}</code></pre><p>That&rsquo;s it! Just one filter to pipe TSV data through. No options or complex arguments to remember.</p>
+<h3 id="tokenizing-the-fields">Tokenizing the fields</h3>
+<p>Another task that often comes up is <em>tokenization</em>, which consists of converting strings of sentences into lists of substrings called <em>tokens</em>.</p>
+<p>Often tokenization is carried out using specialized libraries (e.g. <a href="https://github.com/moses-smt/mosesdecoder">Moses</a>).
+However, sensible default tokens can be obtained by crudely splitting on the space character or general whitespace.
+Sometimes we may also want to get a string &ndash; representing a sentence, a paragraph, or whatever &ndash; split into all of its individual <em>characters</em>.</p>
+<p>To facilitate these default behaviors, I made another filter called <a href="https://codeberg.org/jonne/filters/src/branch/main/jtok"><code>jtok</code></a>:</p>
+
+
+
+
+
+<pre tabindex="0"><code>Usage: jtok [OPTIONS]
+
+Options:
+  -t, --token-type [space|chars|whitespace|custom]
+  -a, --tokenize-all-fields
+  -f, --field-to-tokenize TEXT
+  -c, --custom-tokenizer-command TEXT
+  --help                          Show this message and exit.</code></pre><p>Out of the box, <code>jtok</code> offers (crude) tokenization based on spaces, general whitespaces, or individual characters.
+For example, the JSON file from above</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl
+
+{&#34;x&#34;:&#34;foo&#34;,&#34;y&#34;:&#34;bar&#34;}
+{&#34;x&#34;:&#34;faa&#34;,&#34;y&#34;:&#34;ber&#34;}
+{&#34;x&#34;:&#34;fuu&#34;,&#34;y&#34;:&#34;box&#34;}</code></pre><p>can be tokenized into <em>characters</em> using the following:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl | jtok -a
+
+{&#34;x&#34;:[&#34;f&#34;,&#34;o&#34;,&#34;o&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;a&#34;,&#34;r&#34;]}
+{&#34;x&#34;:[&#34;f&#34;,&#34;a&#34;,&#34;a&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;e&#34;,&#34;r&#34;]}
+{&#34;x&#34;:[&#34;f&#34;,&#34;u&#34;,&#34;u&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;o&#34;,&#34;x&#34;]}</code></pre><p>Here we are taking care to use <code>jtok -a</code> to indicate that we want <em>all</em> fields tokenized.
+The tokenization into characters need not be explicitly specified, as it is the default option.
+This option can be controlled using the <code>--token-type</code> flag.</p>
+<p>We can also tokenize entire sentences if we have longer, non-toy data.
+Consider the following Finnish-English translation data from the <a href="https://github.com/facebookresearch/flores">FLoRes corpus</a>:</p>
+<p>Let&rsquo;s tokenize these sentences into tokens separated by whitespace like this:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; head -n1 flores_fin_eng.jsonl | jtok -a -t whitespace | jq -c
+
+{
+  &#34;fin&#34;: [&#34;Stanfordin&#34;, &#34;yliopiston&#34;, &#34;lääketieteen&#34;, &#34;laitoksen&#34;, ... ],
+  &#34;eng&#34;: [&#34;On&#34;, &#34;Monday,&#34;, &#34;scientists&#34;, &#34;from&#34;, &#34;the&#34;, &#34;Stanford&#34;, ... ]
+}</code></pre><h3 id="messing-with-the-tokenizer">Messing with the tokenizer</h3>
+<p>This seems pretty good, but may not work for some things such as the sentence:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json
+
+{
+    &#34;fin&#34;: &#34;Ai, hänkinkö kävelee kouluun?&#34;,
+    &#34;eng&#34;: &#34;Oh, he is walking to school as well?&#34;
+}</code></pre><p>which will not get correctly tokenized using just whitespace:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json | jtok -a -t whitespace
+
+{
+  &#34;fin&#34;: [&#34;Ai,&#34;, &#34;hänkinkö&#34;, &#34;kävelee&#34;, &#34;kouluun?&#34;],
+  &#34;eng&#34;: [&#34;Oh,&#34;, &#34;he&#34;, &#34;is&#34;, &#34;walking&#34;, &#34;to&#34;, &#34;school&#34;, &#34;as&#34;, &#34;well?&#34; ]
+}</code></pre><p>As we can see, some of the tokens have punctuation attached to them.</p>
+<p>To get around this, we&rsquo;ll need an external tokenizer, such as <a href="https://github.com/alvations/sacremoses">Sacremoses</a> which, by itself, works like a filter:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; echo &#34;Hello, world.&#34; | sacremoses tokenize
+
+Hello , world .</code></pre><p>We can use <code>sacremoses tokenize</code> as our custom tokenizer callback inside of <code>jtok</code>:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json | jtok -a -t custom -c &#34;sacremoses tokenize&#34;
+
+{
+  &#34;fin&#34;: [&#34;Ai&#34;, &#34;,&#34;, &#34;hänkinkö&#34;, &#34;kävelee&#34;, &#34;kouluun&#34;, &#34;?&#34;],
+  &#34;eng&#34;: [&#34;Oh&#34;, &#34;,&#34;, &#34;he&#34;, &#34;is&#34;, &#34;walking&#34;, &#34;to&#34;, &#34;school&#34;, &#34;as&#34;, &#34;well&#34;, &#34;?&#34;]
+}</code></pre><p>Now <code>sacremoses</code> handles the tokenization and the punctuation comes out correctly.</p>
+<h3 id="conclusion--vim-usage-tip">Conclusion &amp; vim usage tip</h3>
+<p>Finally, a tip for Vim users: filters are usable in Vim through <code>&quot;:.!your_filter.sh&quot;</code>.
+I learned this trick from this <a href="https://www.youtube.com/watch?v=7asa2lTcwKI">YouTube video</a> by <a href="https://github.com/rwxrob">rwxrob</a>.
+Check out his work for more info on how to integrate UNIX filters into your Vim workflow.</p>
+<p>That&rsquo;s it, thanks a lot for reading! 😁
+Feel free to take a look at the <a href="https://codeberg.org/jonne/filters">filter repository</a> on Codeberg if you want to learn more and also to get in touch over email.</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>More on research workflow</title>
+      <link>https://cs.brandeis.edu/~jonne/blog/001-research-workflow/</link>
+      <pubDate>Tue, 22 Dec 2020 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/blog/001-research-workflow/</guid>
+      <description>&lt;p&gt;I&amp;rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&amp;rsquo;ve now got some thoughts on a suitable research workflow.&#xA;Note that this is simply what works for me at this time, and may change in the future.&lt;/p&gt;&#xA;&lt;h3 id=&#34;what-was-worth-it&#34;&gt;What was worth it&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Experiment management software &amp;ndash; &lt;a href=&#34;https://guild.ai&#34;&gt;Guild.AI&lt;/a&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;The TUI for &lt;code&gt;guild compare&lt;/code&gt; is great, for example&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Scripts with &lt;em&gt;verbose&lt;/em&gt; arguments&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Do: &lt;code&gt;--input&lt;/code&gt;, &lt;code&gt;--output&lt;/code&gt;, &lt;code&gt;--mode&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Don&amp;rsquo;t: &lt;code&gt;-i&lt;/code&gt;, &lt;code&gt;-o&lt;/code&gt;, &lt;code&gt;-m&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Use &lt;a href=&#34;https://click.palletsprojects.com/en/7.x/&#34;&gt;click&lt;/a&gt; for creating CLIs&lt;/li&gt;&#xA;&lt;li&gt;Coreutils + command line tools like &lt;code&gt;grep&lt;/code&gt;, &lt;code&gt;sed&lt;/code&gt;, &lt;code&gt;awk&lt;/code&gt;, &lt;code&gt;cut&lt;/code&gt;, &lt;code&gt;paste&lt;/code&gt;, &lt;code&gt;...&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;In particular, the above tools are very, very useful inside little shell scripts&lt;/li&gt;&#xA;&lt;li&gt;Infrastructure-as-code is suprisingly worthwhile (e.g. &lt;code&gt;guild.yml&lt;/code&gt;)&lt;/li&gt;&#xA;&lt;li&gt;Symlinking is also very worthwhile&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Create an &lt;code&gt;experiments&lt;/code&gt; folder that is the sole entry point for data on that experiment&lt;/li&gt;&#xA;&lt;li&gt;Inside each experiment folder, simply symlink to data / checkpoints etc.&lt;/li&gt;&#xA;&lt;li&gt;This way, any script only needs to navigate to the folder of that particular experiment&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;what-i-never-found-the-use-case-for&#34;&gt;What I never found the use case for&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;A lot of examples seem to have train &amp;amp; evaluation done in the same script&lt;/li&gt;&#xA;&lt;li&gt;This is often not true when you train with one metric &amp;amp; evaluate using another.&lt;/li&gt;&#xA;&lt;li&gt;Case in point: evaluating MT / seq2seq outputs decoded using beam search&lt;/li&gt;&#xA;&lt;li&gt;I also haven&amp;rsquo;t yet felt the need for &lt;code&gt;cookiecutter&lt;/code&gt; or similar tools that produce boilerplate code.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <content:encoded><![CDATA[<p>I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.</p>
+<h3 id="what-was-worth-it">What was worth it</h3>
+<ul>
+<li>Experiment management software &ndash; <a href="https://guild.ai">Guild.AI</a>
+<ul>
+<li>The TUI for <code>guild compare</code> is great, for example</li>
+</ul>
+</li>
+<li>Scripts with <em>verbose</em> arguments
+<ul>
+<li>Do: <code>--input</code>, <code>--output</code>, <code>--mode</code></li>
+<li>Don&rsquo;t: <code>-i</code>, <code>-o</code>, <code>-m</code></li>
+</ul>
+</li>
+<li>Use <a href="https://click.palletsprojects.com/en/7.x/">click</a> for creating CLIs</li>
+<li>Coreutils + command line tools like <code>grep</code>, <code>sed</code>, <code>awk</code>, <code>cut</code>, <code>paste</code>, <code>...</code></li>
+<li>In particular, the above tools are very, very useful inside little shell scripts</li>
+<li>Infrastructure-as-code is suprisingly worthwhile (e.g. <code>guild.yml</code>)</li>
+<li>Symlinking is also very worthwhile
+<ul>
+<li>Create an <code>experiments</code> folder that is the sole entry point for data on that experiment</li>
+<li>Inside each experiment folder, simply symlink to data / checkpoints etc.</li>
+<li>This way, any script only needs to navigate to the folder of that particular experiment</li>
+</ul>
+</li>
+</ul>
+<h3 id="what-i-never-found-the-use-case-for">What I never found the use case for</h3>
+<ul>
+<li>A lot of examples seem to have train &amp; evaluation done in the same script</li>
+<li>This is often not true when you train with one metric &amp; evaluate using another.</li>
+<li>Case in point: evaluating MT / seq2seq outputs decoded using beam search</li>
+<li>I also haven&rsquo;t yet felt the need for <code>cookiecutter</code> or similar tools that produce boilerplate code.</li>
+</ul>
+]]></content:encoded>
+    </item>
+  </channel>
+</rss>

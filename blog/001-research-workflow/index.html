@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta http-equiv="X-Clacks-Overhead" content="GNU Terry Pratchett" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="shortcut icon" href="https://cs.brandeis.edu/~jonne/images/favicon.png" />
+<title>More on research workflow | Jonne Sälevä</title>
+<meta name="title" content="More on research workflow" />
+<meta name="description" content="I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.
+What was worth it
+
+Experiment management software &ndash; Guild.AI
+
+The TUI for guild compare is great, for example
+
+
+Scripts with verbose arguments
+
+Do: --input, --output, --mode
+Don&rsquo;t: -i, -o, -m
+
+
+Use click for creating CLIs
+Coreutils &#43; command line tools like grep, sed, awk, cut, paste, ...
+In particular, the above tools are very, very useful inside little shell scripts
+Infrastructure-as-code is suprisingly worthwhile (e.g. guild.yml)
+Symlinking is also very worthwhile
+
+Create an experiments folder that is the sole entry point for data on that experiment
+Inside each experiment folder, simply symlink to data / checkpoints etc.
+This way, any script only needs to navigate to the folder of that particular experiment
+
+
+
+What I never found the use case for
+
+A lot of examples seem to have train &amp; evaluation done in the same script
+This is often not true when you train with one metric &amp; evaluate using another.
+Case in point: evaluating MT / seq2seq outputs decoded using beam search
+I also haven&rsquo;t yet felt the need for cookiecutter or similar tools that produce boilerplate code.
+" />
+<meta name="author" content="Jonne Sälevä" />
+<meta name="keywords" content="" />
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<meta property="og:title" content="More on research workflow" />
+<meta property="og:description" content="I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.
+What was worth it
+
+Experiment management software &ndash; Guild.AI
+
+The TUI for guild compare is great, for example
+
+
+Scripts with verbose arguments
+
+Do: --input, --output, --mode
+Don&rsquo;t: -i, -o, -m
+
+
+Use click for creating CLIs
+Coreutils &#43; command line tools like grep, sed, awk, cut, paste, ...
+In particular, the above tools are very, very useful inside little shell scripts
+Infrastructure-as-code is suprisingly worthwhile (e.g. guild.yml)
+Symlinking is also very worthwhile
+
+Create an experiments folder that is the sole entry point for data on that experiment
+Inside each experiment folder, simply symlink to data / checkpoints etc.
+This way, any script only needs to navigate to the folder of that particular experiment
+
+
+
+What I never found the use case for
+
+A lot of examples seem to have train &amp; evaluation done in the same script
+This is often not true when you train with one metric &amp; evaluate using another.
+Case in point: evaluating MT / seq2seq outputs decoded using beam search
+I also haven&rsquo;t yet felt the need for cookiecutter or similar tools that produce boilerplate code.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://cs.brandeis.edu/~jonne/blog/001-research-workflow/" />
+
+<meta property="og:image" content="https://cs.brandeis.edu/~jonne/images/social_card_bg_hu_54a3277f24c049b3.webp"/><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2020-12-22T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-12-22T00:00:00+00:00" /><meta property="og:site_name" content="Jonne Sälevä" />
+
+
+
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://cs.brandeis.edu/~jonne/images/social_card_bg_hu_54a3277f24c049b3.webp"/>
+<meta name="twitter:title" content="More on research workflow"/>
+<meta name="twitter:description" content="I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.
+What was worth it
+
+Experiment management software &ndash; Guild.AI
+
+The TUI for guild compare is great, for example
+
+
+Scripts with verbose arguments
+
+Do: --input, --output, --mode
+Don&rsquo;t: -i, -o, -m
+
+
+Use click for creating CLIs
+Coreutils &#43; command line tools like grep, sed, awk, cut, paste, ...
+In particular, the above tools are very, very useful inside little shell scripts
+Infrastructure-as-code is suprisingly worthwhile (e.g. guild.yml)
+Symlinking is also very worthwhile
+
+Create an experiments folder that is the sole entry point for data on that experiment
+Inside each experiment folder, simply symlink to data / checkpoints etc.
+This way, any script only needs to navigate to the folder of that particular experiment
+
+
+
+What I never found the use case for
+
+A lot of examples seem to have train &amp; evaluation done in the same script
+This is often not true when you train with one metric &amp; evaluate using another.
+Case in point: evaluating MT / seq2seq outputs decoded using beam search
+I also haven&rsquo;t yet felt the need for cookiecutter or similar tools that produce boilerplate code.
+"/>
+<meta name="twitter:site" content="@jonnesaleva"/>
+
+
+
+<meta itemprop="name" content="More on research workflow">
+<meta itemprop="description" content="I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.
+What was worth it
+
+Experiment management software &ndash; Guild.AI
+
+The TUI for guild compare is great, for example
+
+
+Scripts with verbose arguments
+
+Do: --input, --output, --mode
+Don&rsquo;t: -i, -o, -m
+
+
+Use click for creating CLIs
+Coreutils &#43; command line tools like grep, sed, awk, cut, paste, ...
+In particular, the above tools are very, very useful inside little shell scripts
+Infrastructure-as-code is suprisingly worthwhile (e.g. guild.yml)
+Symlinking is also very worthwhile
+
+Create an experiments folder that is the sole entry point for data on that experiment
+Inside each experiment folder, simply symlink to data / checkpoints etc.
+This way, any script only needs to navigate to the folder of that particular experiment
+
+
+
+What I never found the use case for
+
+A lot of examples seem to have train &amp; evaluation done in the same script
+This is often not true when you train with one metric &amp; evaluate using another.
+Case in point: evaluating MT / seq2seq outputs decoded using beam search
+I also haven&rsquo;t yet felt the need for cookiecutter or similar tools that produce boilerplate code.
+"><meta itemprop="datePublished" content="2020-12-22T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2020-12-22T00:00:00+00:00" />
+<meta itemprop="wordCount" content="221">
+
+<meta itemprop="image" content="https://cs.brandeis.edu/~jonne/images/social_card_bg_hu_54a3277f24c049b3.webp"/>
+
+
+<meta itemprop="keywords" content="" />
+
+<meta name="referrer" content="no-referrer-when-downgrade" />
+
+  
+  <link href="/~jonne/original.min.css" rel="stylesheet">
+
+  
+
+  
+
+  
+</head>
+
+<body>
+  <header><a class="skip-link" href="#main-content">Skip to main content</a>
+
+<a href="/~jonne/" class="title"><h1>Jonne Sälevä</h1></a>
+<nav>
+<a href="/~jonne/">Home</a>
+
+<a href="/~jonne/news">News</a>
+
+<a href="/~jonne/about-me">About me</a>
+
+<a href="/~jonne/research">Research</a>
+
+<a href="/~jonne/blog">Blog</a>
+
+
+
+
+
+
+
+
+
+</nav>
+</header>
+  <main id="main-content">
+
+<h1>More on research workflow</h1>
+<p class="byline">
+  
+  <time datetime='2020-12-22' pubdate>
+    2020-12-22
+  </time>
+  
+  · Jonne Sälevä
+</p>
+
+<content>
+  <p>I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.</p>
+<h3 id="what-was-worth-it">What was worth it</h3>
+<ul>
+<li>Experiment management software &ndash; <a href="https://guild.ai">Guild.AI</a>
+<ul>
+<li>The TUI for <code>guild compare</code> is great, for example</li>
+</ul>
+</li>
+<li>Scripts with <em>verbose</em> arguments
+<ul>
+<li>Do: <code>--input</code>, <code>--output</code>, <code>--mode</code></li>
+<li>Don&rsquo;t: <code>-i</code>, <code>-o</code>, <code>-m</code></li>
+</ul>
+</li>
+<li>Use <a href="https://click.palletsprojects.com/en/7.x/">click</a> for creating CLIs</li>
+<li>Coreutils + command line tools like <code>grep</code>, <code>sed</code>, <code>awk</code>, <code>cut</code>, <code>paste</code>, <code>...</code></li>
+<li>In particular, the above tools are very, very useful inside little shell scripts</li>
+<li>Infrastructure-as-code is suprisingly worthwhile (e.g. <code>guild.yml</code>)</li>
+<li>Symlinking is also very worthwhile
+<ul>
+<li>Create an <code>experiments</code> folder that is the sole entry point for data on that experiment</li>
+<li>Inside each experiment folder, simply symlink to data / checkpoints etc.</li>
+<li>This way, any script only needs to navigate to the folder of that particular experiment</li>
+</ul>
+</li>
+</ul>
+<h3 id="what-i-never-found-the-use-case-for">What I never found the use case for</h3>
+<ul>
+<li>A lot of examples seem to have train &amp; evaluation done in the same script</li>
+<li>This is often not true when you train with one metric &amp; evaluate using another.</li>
+<li>Case in point: evaluating MT / seq2seq outputs decoded using beam search</li>
+<li>I also haven&rsquo;t yet felt the need for <code>cookiecutter</code> or similar tools that produce boilerplate code.</li>
+</ul>
+
+</content>
+<p>
+  
+</p>
+
+
+
+
+  </main>
+  <footer><small>
+   | 
+</small></footer>
+
+    
+</body>
+
+</html>

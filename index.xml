@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Jonne Sälevä</title>
+    <link>https://cs.brandeis.edu/~jonne/</link>
+    <description>Recent content on Jonne Sälevä</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 15 Sep 2025 11:16:06 -0400</lastBuildDate>
+    <atom:link href="https://cs.brandeis.edu/~jonne/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Why UNIX filters are cool</title>
+      <link>https://cs.brandeis.edu/~jonne/blog/002-unix-filters/</link>
+      <pubDate>Mon, 25 Jul 2022 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/blog/002-unix-filters/</guid>
+      <description>&lt;p&gt;When working on Linux, &lt;em&gt;filters&lt;/em&gt; are a topic that often comes up. But what are they?&lt;/p&gt;&#xA;&lt;p&gt;Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.&lt;/p&gt;&#xA;&lt;p&gt;Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.&lt;/p&gt;&#xA;&lt;p&gt;What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.&#xA;They are a great example of the UNIX philosophy principle&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>When working on Linux, <em>filters</em> are a topic that often comes up. But what are they?</p>
+<p>Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.</p>
+<p>Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.</p>
+<p>What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle</p>
+<blockquote>
+*"Do one thing and do it well."*
+</blockquote>
+<p>which is often even given as a <em>definition</em> for UNIX philosophy itself.</p>
+<h3 id="converting-tsv-to-jsonl">Converting TSV to JSON(L)</h3>
+<p>In my work, I&rsquo;ve frequently got TSV data which would be easier to work with if it were in JSON(L).
+Finally, I found an easy conversion tool: <a href="https://visidata.org"><code>visidata</code></a>.</p>
+<p>Using <code>visidata</code>, we can write the following filter that takes input from STDIN, as well as some optional arguments, and outputs a neatly formatted JSON document:</p>
+
+
+
+
+
+<pre tabindex="0"><code>visidata \
+    -b --save-filetype &#34;jsonl&#34; \
+    &lt; ${1:-/dev/stdin} 2&gt;/dev/null \
+    | jq -c</code></pre><p>We can save this under <code>tsv2jsonl</code> and place it somewhere in our <code>$PATH</code>.</p>
+<p>If we have a TSV file like</p>
+
+
+
+
+
+<pre tabindex="0"><code>x	y
+foo	bar
+faa	ber
+fuu	box</code></pre><p>saved under <code>my_file.tsv</code>, then we can convert it to JSON by doing:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl
+
+{&#34;x&#34;:&#34;foo&#34;,&#34;y&#34;:&#34;bar&#34;}
+{&#34;x&#34;:&#34;faa&#34;,&#34;y&#34;:&#34;ber&#34;}
+{&#34;x&#34;:&#34;fuu&#34;,&#34;y&#34;:&#34;box&#34;}</code></pre><p>That&rsquo;s it! Just one filter to pipe TSV data through. No options or complex arguments to remember.</p>
+<h3 id="tokenizing-the-fields">Tokenizing the fields</h3>
+<p>Another task that often comes up is <em>tokenization</em>, which consists of converting strings of sentences into lists of substrings called <em>tokens</em>.</p>
+<p>Often tokenization is carried out using specialized libraries (e.g. <a href="https://github.com/moses-smt/mosesdecoder">Moses</a>).
+However, sensible default tokens can be obtained by crudely splitting on the space character or general whitespace.
+Sometimes we may also want to get a string &ndash; representing a sentence, a paragraph, or whatever &ndash; split into all of its individual <em>characters</em>.</p>
+<p>To facilitate these default behaviors, I made another filter called <a href="https://codeberg.org/jonne/filters/src/branch/main/jtok"><code>jtok</code></a>:</p>
+
+
+
+
+
+<pre tabindex="0"><code>Usage: jtok [OPTIONS]
+
+Options:
+  -t, --token-type [space|chars|whitespace|custom]
+  -a, --tokenize-all-fields
+  -f, --field-to-tokenize TEXT
+  -c, --custom-tokenizer-command TEXT
+  --help                          Show this message and exit.</code></pre><p>Out of the box, <code>jtok</code> offers (crude) tokenization based on spaces, general whitespaces, or individual characters.
+For example, the JSON file from above</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl
+
+{&#34;x&#34;:&#34;foo&#34;,&#34;y&#34;:&#34;bar&#34;}
+{&#34;x&#34;:&#34;faa&#34;,&#34;y&#34;:&#34;ber&#34;}
+{&#34;x&#34;:&#34;fuu&#34;,&#34;y&#34;:&#34;box&#34;}</code></pre><p>can be tokenized into <em>characters</em> using the following:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl | jtok -a
+
+{&#34;x&#34;:[&#34;f&#34;,&#34;o&#34;,&#34;o&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;a&#34;,&#34;r&#34;]}
+{&#34;x&#34;:[&#34;f&#34;,&#34;a&#34;,&#34;a&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;e&#34;,&#34;r&#34;]}
+{&#34;x&#34;:[&#34;f&#34;,&#34;u&#34;,&#34;u&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;o&#34;,&#34;x&#34;]}</code></pre><p>Here we are taking care to use <code>jtok -a</code> to indicate that we want <em>all</em> fields tokenized.
+The tokenization into characters need not be explicitly specified, as it is the default option.
+This option can be controlled using the <code>--token-type</code> flag.</p>
+<p>We can also tokenize entire sentences if we have longer, non-toy data.
+Consider the following Finnish-English translation data from the <a href="https://github.com/facebookresearch/flores">FLoRes corpus</a>:</p>
+<p>Let&rsquo;s tokenize these sentences into tokens separated by whitespace like this:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; head -n1 flores_fin_eng.jsonl | jtok -a -t whitespace | jq -c
+
+{
+  &#34;fin&#34;: [&#34;Stanfordin&#34;, &#34;yliopiston&#34;, &#34;lääketieteen&#34;, &#34;laitoksen&#34;, ... ],
+  &#34;eng&#34;: [&#34;On&#34;, &#34;Monday,&#34;, &#34;scientists&#34;, &#34;from&#34;, &#34;the&#34;, &#34;Stanford&#34;, ... ]
+}</code></pre><h3 id="messing-with-the-tokenizer">Messing with the tokenizer</h3>
+<p>This seems pretty good, but may not work for some things such as the sentence:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json
+
+{
+    &#34;fin&#34;: &#34;Ai, hänkinkö kävelee kouluun?&#34;,
+    &#34;eng&#34;: &#34;Oh, he is walking to school as well?&#34;
+}</code></pre><p>which will not get correctly tokenized using just whitespace:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json | jtok -a -t whitespace
+
+{
+  &#34;fin&#34;: [&#34;Ai,&#34;, &#34;hänkinkö&#34;, &#34;kävelee&#34;, &#34;kouluun?&#34;],
+  &#34;eng&#34;: [&#34;Oh,&#34;, &#34;he&#34;, &#34;is&#34;, &#34;walking&#34;, &#34;to&#34;, &#34;school&#34;, &#34;as&#34;, &#34;well?&#34; ]
+}</code></pre><p>As we can see, some of the tokens have punctuation attached to them.</p>
+<p>To get around this, we&rsquo;ll need an external tokenizer, such as <a href="https://github.com/alvations/sacremoses">Sacremoses</a> which, by itself, works like a filter:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; echo &#34;Hello, world.&#34; | sacremoses tokenize
+
+Hello , world .</code></pre><p>We can use <code>sacremoses tokenize</code> as our custom tokenizer callback inside of <code>jtok</code>:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json | jtok -a -t custom -c &#34;sacremoses tokenize&#34;
+
+{
+  &#34;fin&#34;: [&#34;Ai&#34;, &#34;,&#34;, &#34;hänkinkö&#34;, &#34;kävelee&#34;, &#34;kouluun&#34;, &#34;?&#34;],
+  &#34;eng&#34;: [&#34;Oh&#34;, &#34;,&#34;, &#34;he&#34;, &#34;is&#34;, &#34;walking&#34;, &#34;to&#34;, &#34;school&#34;, &#34;as&#34;, &#34;well&#34;, &#34;?&#34;]
+}</code></pre><p>Now <code>sacremoses</code> handles the tokenization and the punctuation comes out correctly.</p>
+<h3 id="conclusion--vim-usage-tip">Conclusion &amp; vim usage tip</h3>
+<p>Finally, a tip for Vim users: filters are usable in Vim through <code>&quot;:.!your_filter.sh&quot;</code>.
+I learned this trick from this <a href="https://www.youtube.com/watch?v=7asa2lTcwKI">YouTube video</a> by <a href="https://github.com/rwxrob">rwxrob</a>.
+Check out his work for more info on how to integrate UNIX filters into your Vim workflow.</p>
+<p>That&rsquo;s it, thanks a lot for reading! 😁
+Feel free to take a look at the <a href="https://codeberg.org/jonne/filters">filter repository</a> on Codeberg if you want to learn more and also to get in touch over email.</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>More on research workflow</title>
+      <link>https://cs.brandeis.edu/~jonne/blog/001-research-workflow/</link>
+      <pubDate>Tue, 22 Dec 2020 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/blog/001-research-workflow/</guid>
+      <description>&lt;p&gt;I&amp;rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&amp;rsquo;ve now got some thoughts on a suitable research workflow.&#xA;Note that this is simply what works for me at this time, and may change in the future.&lt;/p&gt;&#xA;&lt;h3 id=&#34;what-was-worth-it&#34;&gt;What was worth it&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Experiment management software &amp;ndash; &lt;a href=&#34;https://guild.ai&#34;&gt;Guild.AI&lt;/a&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;The TUI for &lt;code&gt;guild compare&lt;/code&gt; is great, for example&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Scripts with &lt;em&gt;verbose&lt;/em&gt; arguments&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Do: &lt;code&gt;--input&lt;/code&gt;, &lt;code&gt;--output&lt;/code&gt;, &lt;code&gt;--mode&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Don&amp;rsquo;t: &lt;code&gt;-i&lt;/code&gt;, &lt;code&gt;-o&lt;/code&gt;, &lt;code&gt;-m&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Use &lt;a href=&#34;https://click.palletsprojects.com/en/7.x/&#34;&gt;click&lt;/a&gt; for creating CLIs&lt;/li&gt;&#xA;&lt;li&gt;Coreutils + command line tools like &lt;code&gt;grep&lt;/code&gt;, &lt;code&gt;sed&lt;/code&gt;, &lt;code&gt;awk&lt;/code&gt;, &lt;code&gt;cut&lt;/code&gt;, &lt;code&gt;paste&lt;/code&gt;, &lt;code&gt;...&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;In particular, the above tools are very, very useful inside little shell scripts&lt;/li&gt;&#xA;&lt;li&gt;Infrastructure-as-code is suprisingly worthwhile (e.g. &lt;code&gt;guild.yml&lt;/code&gt;)&lt;/li&gt;&#xA;&lt;li&gt;Symlinking is also very worthwhile&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Create an &lt;code&gt;experiments&lt;/code&gt; folder that is the sole entry point for data on that experiment&lt;/li&gt;&#xA;&lt;li&gt;Inside each experiment folder, simply symlink to data / checkpoints etc.&lt;/li&gt;&#xA;&lt;li&gt;This way, any script only needs to navigate to the folder of that particular experiment&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;what-i-never-found-the-use-case-for&#34;&gt;What I never found the use case for&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;A lot of examples seem to have train &amp;amp; evaluation done in the same script&lt;/li&gt;&#xA;&lt;li&gt;This is often not true when you train with one metric &amp;amp; evaluate using another.&lt;/li&gt;&#xA;&lt;li&gt;Case in point: evaluating MT / seq2seq outputs decoded using beam search&lt;/li&gt;&#xA;&lt;li&gt;I also haven&amp;rsquo;t yet felt the need for &lt;code&gt;cookiecutter&lt;/code&gt; or similar tools that produce boilerplate code.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <content:encoded><![CDATA[<p>I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
+Note that this is simply what works for me at this time, and may change in the future.</p>
+<h3 id="what-was-worth-it">What was worth it</h3>
+<ul>
+<li>Experiment management software &ndash; <a href="https://guild.ai">Guild.AI</a>
+<ul>
+<li>The TUI for <code>guild compare</code> is great, for example</li>
+</ul>
+</li>
+<li>Scripts with <em>verbose</em> arguments
+<ul>
+<li>Do: <code>--input</code>, <code>--output</code>, <code>--mode</code></li>
+<li>Don&rsquo;t: <code>-i</code>, <code>-o</code>, <code>-m</code></li>
+</ul>
+</li>
+<li>Use <a href="https://click.palletsprojects.com/en/7.x/">click</a> for creating CLIs</li>
+<li>Coreutils + command line tools like <code>grep</code>, <code>sed</code>, <code>awk</code>, <code>cut</code>, <code>paste</code>, <code>...</code></li>
+<li>In particular, the above tools are very, very useful inside little shell scripts</li>
+<li>Infrastructure-as-code is suprisingly worthwhile (e.g. <code>guild.yml</code>)</li>
+<li>Symlinking is also very worthwhile
+<ul>
+<li>Create an <code>experiments</code> folder that is the sole entry point for data on that experiment</li>
+<li>Inside each experiment folder, simply symlink to data / checkpoints etc.</li>
+<li>This way, any script only needs to navigate to the folder of that particular experiment</li>
+</ul>
+</li>
+</ul>
+<h3 id="what-i-never-found-the-use-case-for">What I never found the use case for</h3>
+<ul>
+<li>A lot of examples seem to have train &amp; evaluation done in the same script</li>
+<li>This is often not true when you train with one metric &amp; evaluate using another.</li>
+<li>Case in point: evaluating MT / seq2seq outputs decoded using beam search</li>
+<li>I also haven&rsquo;t yet felt the need for <code>cookiecutter</code> or similar tools that produce boilerplate code.</li>
+</ul>
+]]></content:encoded>
+    </item>
+    <item>
+      <title></title>
+      <link>https://cs.brandeis.edu/~jonne/about-me/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/about-me/</guid>
+      <description>&lt;h2 id=&#34;basic-info&#34;&gt;Basic info&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Name: Jonne Sälevä&lt;/li&gt;&#xA;&lt;li&gt;Grew up in: Rovaniemi, Finland&lt;/li&gt;&#xA;&lt;li&gt;Location: Greater Boston, Massachusetts, USA&lt;/li&gt;&#xA;&lt;li&gt;Currently: PhD student at Brandeis University&lt;/li&gt;&#xA;&lt;li&gt;Interests: Linux, language learning, statistics and its history&lt;/li&gt;&#xA;&lt;li&gt;Contact:&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Email: &lt;code&gt;first 💣 firstlast 💣 com&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;LinkedIn: &lt;a href=&#34;https://www.linkedin.com/in/jonnesaleva&#34;&gt;linkedin.com/in/jonnesaleva&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;previous-positions&#34;&gt;Previous positions&lt;/h2&gt;&#xA;&lt;h3 id=&#34;research&#34;&gt;Research&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Student Researcher, &lt;em&gt;&lt;a href=&#34;https://www.deepmind.com&#34;&gt;Google DeepMind&lt;/a&gt; &lt;small&gt;(2023)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Summer Research Intern, &lt;em&gt;&lt;a href=&#34;https://www.isi.edu/projects/nlg/summer_internships&#34;&gt;NLP Group, USC Information Sciences Institute&lt;/a&gt; &lt;small&gt;(2022)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Summer School @ &lt;a href=&#34;https://mila.quebec&#34;&gt;MILA&lt;/a&gt;, &lt;em&gt;Deep Learning &amp;amp; Reinforcement Learning Summer School &lt;small&gt;(2020)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Research Assistant, &lt;em&gt;Broadening Linguistic Technologies Lab &lt;small&gt;(2019-present)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Research on low-resource NLP/ASR, &lt;em&gt;Stat 99: Senior Tutorial &lt;small&gt;(2016-2017)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;teaching&#34;&gt;Teaching&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Teaching Assistant, &lt;em&gt;CS137b/CS232b: Information Extraction &lt;small&gt;(2022-2024)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Teaching Assistant, &lt;em&gt;CS114a: Introduction to NLP with Python &lt;small&gt;(2020-2024)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Teaching Assistant, &lt;em&gt;Ling 160: Mathematical Methods for Linguistics &lt;small&gt;(2019)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Teaching Fellow, &lt;em&gt;Stat 139: Introduction to Statistical Modeling &lt;small&gt;(2015)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;industry&#34;&gt;Industry&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;NLP Engineer, &lt;em&gt;&lt;a href=&#34;http://think-a-move.com/&#34;&gt;Think-A-Move Ltd.&lt;/a&gt; &lt;small&gt;(2018-2019)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;NLP Data Scientist, &lt;em&gt;&lt;a href=&#34;http://www.haave.io&#34;&gt;Haave Inc.&lt;/a&gt; &lt;small&gt;(2018)&lt;/small&gt;&lt;/em&gt;&lt;/li&gt;&#xA;&lt;li&gt;Several earlier internships in the past etc.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <content:encoded><![CDATA[<h2 id="basic-info">Basic info</h2>
+<ul>
+<li>Name: Jonne Sälevä</li>
+<li>Grew up in: Rovaniemi, Finland</li>
+<li>Location: Greater Boston, Massachusetts, USA</li>
+<li>Currently: PhD student at Brandeis University</li>
+<li>Interests: Linux, language learning, statistics and its history</li>
+<li>Contact:
+<ul>
+<li>Email: <code>first 💣 firstlast 💣 com</code></li>
+<li>LinkedIn: <a href="https://www.linkedin.com/in/jonnesaleva">linkedin.com/in/jonnesaleva</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="previous-positions">Previous positions</h2>
+<h3 id="research">Research</h3>
+<ul>
+<li>Student Researcher, <em><a href="https://www.deepmind.com">Google DeepMind</a> <small>(2023)</small></em></li>
+<li>Summer Research Intern, <em><a href="https://www.isi.edu/projects/nlg/summer_internships">NLP Group, USC Information Sciences Institute</a> <small>(2022)</small></em></li>
+<li>Summer School @ <a href="https://mila.quebec">MILA</a>, <em>Deep Learning &amp; Reinforcement Learning Summer School <small>(2020)</small></em></li>
+<li>Research Assistant, <em>Broadening Linguistic Technologies Lab <small>(2019-present)</small></em></li>
+<li>Research on low-resource NLP/ASR, <em>Stat 99: Senior Tutorial <small>(2016-2017)</small></em></li>
+</ul>
+<h3 id="teaching">Teaching</h3>
+<ul>
+<li>Teaching Assistant, <em>CS137b/CS232b: Information Extraction <small>(2022-2024)</small></em></li>
+<li>Teaching Assistant, <em>CS114a: Introduction to NLP with Python <small>(2020-2024)</small></em></li>
+<li>Teaching Assistant, <em>Ling 160: Mathematical Methods for Linguistics <small>(2019)</small></em></li>
+<li>Teaching Fellow, <em>Stat 139: Introduction to Statistical Modeling <small>(2015)</small></em></li>
+</ul>
+<h3 id="industry">Industry</h3>
+<ul>
+<li>NLP Engineer, <em><a href="http://think-a-move.com/">Think-A-Move Ltd.</a> <small>(2018-2019)</small></em></li>
+<li>NLP Data Scientist, <em><a href="http://www.haave.io">Haave Inc.</a> <small>(2018)</small></em></li>
+<li>Several earlier internships in the past etc.</li>
+</ul>
+]]></content:encoded>
+    </item>
+    <item>
+      <title></title>
+      <link>https://cs.brandeis.edu/~jonne/portfolio/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/portfolio/</guid>
+      <description></description>
+      <content:encoded><![CDATA[]]></content:encoded>
+    </item>
+    <item>
+      <title>News</title>
+      <link>https://cs.brandeis.edu/~jonne/news/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/news/</guid>
+      <description>&lt;h3 id=&#34;2026&#34;&gt;2026&lt;/h3&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Organizing SIGTURK workshop at EACL 2026 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;I am serving as the Publicity Chair for the &lt;a href=&#34;https://sigturk.github.io/workshop2026/&#34;&gt;Second Workshop on Natural Language Processing for Turkic Languages&lt;/a&gt; which will be held at EACL 2026 in Rabat, Morocco.&lt;/dd&gt;&#xA;&lt;dd&gt;This year the workshop will also feature a &lt;a href=&#34;https://sigturk.github.io/sharedtask2026/&#34;&gt;Shared Task on Terminology-Aware Machine Translation for English–Turkish Scientific Texts&lt;/a&gt;. I encourage everyone to participate!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;h3 id=&#34;2025&#34;&gt;2025&lt;/h3&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;LLM uncertainty quantification paper accepted to ICJNLP-AACL 2025 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;My new paper, &lt;a href=&#34;https://arxiv.org/abs/2509.22612&#34;&gt;&lt;em&gt;From tests to effect sizes: Quantifying uncertainty and statistical variability in multilingual and multitask NLP evaluation benchmarks&lt;/em&gt;&lt;/a&gt; was accepted to &lt;a href=&#34;https://2025.aaclnet.org/&#34;&gt;ICJNLP-AACL 2025&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;dd&gt;The paper shows that conventional evaluation paradigms wildly underestimate the uncertainty and statistical variability of model performance, which can lead to overconfidence in rankings and overestimates of statistical significance.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Multilingual NER paper published at EMNLP 2025 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our lab&amp;rsquo;s collaborative NER benchmarking paper, &lt;a href=&#34;https://arxiv.org/abs/2412.09587&#34;&gt;&lt;em&gt;OpenNER 1.0: Standardized Open-Access Named Entity Recognition Datasets in 50+ Languages&lt;/em&gt;&lt;/a&gt; will be published at &lt;a href=&#34;https://2025.emnlp.org/&#34;&gt;EMNLP 2025&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;dd&gt;Thanks to &lt;a href=&#34;https://cpalenmichel.github.io/&#34;&gt;Chester&lt;/a&gt; for letting me use the data for my &lt;a href=&#34;https://arxiv.org/abs/2509.22612&#34;&gt;evaluation paper&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Paper on morphological reasoning skills of LLMs accepted to NAACL 2025 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our collaboration paper, &lt;em&gt;Evaluating Morphological Compositional Generalization in Large Language Models&lt;/em&gt; was accepted to &lt;a href=&#34;https://aclanthology.org/2025.naacl-long.59/&#34;&gt;NAACL 2025&lt;/a&gt;. In it we show that LLMs struggle significantly when presented with out-of-distribution linguistic reasoning tasks.&lt;/dd&gt;&#xA;&lt;dd&gt;Thanks to &lt;a href=&#34;https://www.mete.is/&#34;&gt;Mete&lt;/a&gt;, &lt;a href=&#34;https://defnecirci.github.io/&#34;&gt;Defne&lt;/a&gt;, &lt;a href=&#34;https://www.duyguataman.com&#34;&gt;Duygu&lt;/a&gt; and everyone else for the great collaboration!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;h3 id=&#34;2024&#34;&gt;2024&lt;/h3&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Organizing Multilingual Representation Learning workshop at EMNLP 2024 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;I am co-organizing the &lt;a href=&#34;https://aclanthology.org/2024.mrl-1.0/&#34;&gt;Fourth Workshop on Multilingual Representation Learning&lt;/a&gt; at EMNLP 2024. The workshop brings together researchers working on multilingual representation learning with applications to a variety of tasks.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Organizing SIGTURK workshop at ACL 2024 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;I am co-organizing the &lt;a href=&#34;https://aclanthology.org/2024.sigturk-1.0/&#34;&gt;First Workshop on Natural Language Processing for Turkic Languages&lt;/a&gt; at ACL 2024. The workshop brings together researchers working on NLP for Turkic languages and morphologically rich languages more generally.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Northern Sámi NMT paper published at ACL Findings 2024 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our paper, &lt;em&gt;Language Model Priors and Data Augmentation Strategies for Low-resource Machine Translation: A Case Study Using Finnish to Northern Sámi&lt;/em&gt; was published at &lt;a href=&#34;https://aclanthology.org/2024.findings-acl.768/&#34;&gt;Findings of the ACL 2024&lt;/a&gt;. Looking forward to presenting this at ACL 2024 in Bangkok!&lt;/dd&gt;&#xA;&lt;dd&gt;Thanks to &lt;a href=&#34;https://www.skr.fi&#34;&gt;Finnish Cultural Foundation&lt;/a&gt; and the &lt;a href=&#34;https://skr.fi/tietoa-meista/maakuntarahastot/lappi/&#34;&gt;Lapland Regional Fund&lt;/a&gt; for their support!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;ParaNames published at LREC-COLING 2024 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our paper, &lt;em&gt;ParaNames 1.0: Creating an Entity Name Corpus for 400+ Languages using Wikidata&lt;/em&gt;, was accepted to &lt;a href=&#34;https://lrec-coling-2024.org/list-of-accepted-papers/&#34;&gt;LREC-COLING 2024&lt;/a&gt;. Check out the resource for free on &lt;a href=&#34;https://www.github.com/bltlab/paranames&#34;&gt;Github&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- : Further applications abound, especially in the era of large language models. Happy hacking! --&gt;&#xA;&lt;!-- : We describe the corpus, which covers over 16.8 million entities in 400+ languages, and experiment with using it as --&gt;&#xA;&lt;!--     - a training corpus for name translation models --&gt;&#xA;&lt;!--     - a supplemental resource for low-resource NER tasks. --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Shared task paper at VarDial 2024 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our team took part in the &lt;em&gt;DSL-ML - Multi-label classification of similar languages&lt;/em&gt; shared task at &lt;a href=&#34;https://sites.google.com/view/vardial-2024/shared-tasks/dsl-ml&#34;&gt;VarDial 2024&lt;/a&gt; and placed 1st on all the languages we participated in! Big thanks to &lt;a href=&#34;https://cpalenmichel.github.io/&#34;&gt;Chester Palen-Michel&lt;/a&gt; for collaborating on this with me!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;h3 id=&#34;2023&#34;&gt;2023&lt;/h3&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Internship at Google DeepMind &lt;span class=&#34;badge badge-summer&#34;&gt;Summer&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;This summer/fall, I&amp;rsquo;ll be working at &lt;a href=&#34;https://www.deepmind.com&#34;&gt;Google DeepMind&lt;/a&gt; as a Student Researcher, focusing on out-of-distribution detection-style topics. Very excited to be working with LLMs in addition to my low-resource NLP work! Thanks GDM!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Best Paper Award at Insights 2023 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our paper, &lt;span class=&#34;title&#34;&gt;What changes when you randomly choose BPE merge operations? Not much.&lt;/span&gt; was accepted to the &lt;a href=&#34;https://insights-workshop.github.io/2023/program/&#34;&gt;Fourth Workshop on Insights from Negative Results in NLP&lt;/a&gt;, held in conjunction with &lt;a href=&#34;https://2023.eacl.org/&#34;&gt;EACL 2023&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Organizing CoCo4MT Shared Task at MTSummit 2023 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;I am co-organizing CoCo4MT 2023 Shared Task on Corpus Construction for Machine Translation, held in conjuction with &lt;a href=&#34;https://aclanthology.org/events/mtsummit-2023/&#34;&gt;MTSummit 2023&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Extended abstract accepted at SIGTYP 2022 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our extended abstract, &lt;a href=&#34;https://sigtyp.github.io/workshops/2022/sigtyp/papers/SIGTYP3.pdf&#34;&gt;&lt;em&gt;ParaNames: A Massively Multilingual Entity Name Corpus&lt;/em&gt;&lt;/a&gt; was accepted to SIGTYP 2022, held in conjunction with NAACL 2022.&lt;/dd&gt;&#xA;&lt;dd&gt;The abstract describes the work our lab has been doing on &lt;em&gt;ParaNames&lt;/em&gt;, a multilingual entity name corpus that covers over 400 languages and 18 million entities.&lt;/dd&gt;&#xA;&lt;dd&gt;Feel free to also take a look at the &lt;a href=&#34;https://arxiv.org/abs/2202.14035&#34;&gt;preprint&lt;/a&gt; and the &lt;a href=&#34;https://www.github.com/bltlab/paranames&#34;&gt;Github repository&lt;/a&gt;.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;h3 id=&#34;2022&#34;&gt;2022&lt;/h3&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Organizing the DCLRL workshop at LREC 2022 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;I&amp;rsquo;ll be co-organizing the first &lt;a href=&#34;https://dclrl.github.io&#34;&gt;Workshop on Dataset Creation for Lower-Resourced Languages&lt;/a&gt; held at LREC 2022. Hope to see you there!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Internship at USC Information Sciences Institute &lt;span class=&#34;badge badge-summer&#34;&gt;Summer&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;This summer, I&amp;rsquo;ll be joining the &lt;a href=&#34;https://www.isi.edu/&#34;&gt;Information Sciences Institute&lt;/a&gt; at the University of Southern California as a Visiting Research Assistant.&lt;/dd&gt;&#xA;&lt;dd&gt;Looking forward to spending the summer in sunny California!&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;!-- Bla --&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;One paper accepted at Findings of the ACL 2022 &lt;span class=&#34;badge badge-paper&#34;&gt;Paper&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;Our new position paper, &lt;a href=&#34;https://arxiv.org/abs/2202.12288&#34;&gt;&lt;em&gt;Toward More Meaningful Resources for Lower-resourced Languages&lt;/em&gt;&lt;/a&gt;, was accepted to Findings of the ACL for ACL 2022.&lt;/dd&gt;&#xA;&lt;dd&gt;Recommended reading for anyone working on lower-resourced languages, as well as anyone thinking of using Wikidata or WikiAnn out-of-the-box.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;h3 id=&#34;2021&#34;&gt;2021&lt;/h3&gt;&#xA;&lt;dl&gt;&#xA;&lt;dt&gt;Two workshop papers accepted at EACL 2021 &lt;span class=&#34;badge badge-workshop&#34;&gt;Workshop&lt;/span&gt;&lt;/dt&gt;&#xA;&lt;dd&gt;My paper on morphology and low-resource NMT, &lt;a href=&#34;https://www.aclweb.org/anthology/2021.eacl-srw.22/&#34;&gt;&lt;em&gt;The Effectiveness of Morphology-aware Segmentation in Low-Resource Neural Machine Translation&lt;/em&gt;&lt;/a&gt;, was accepted to the Student Research Workshop.&lt;/dd&gt;&#xA;&lt;dd&gt;Another paper of mine, &lt;a href=&#34;https://arxiv.org/abs/2104.00558&#34;&gt;&lt;em&gt;Mining Wikidata for Name Resources for African Languages&lt;/em&gt;&lt;/a&gt;, was also accepted to the AfricaNLP Workshop.&lt;/dd&gt;&#xA;&lt;/dl&gt;&#xA;&lt;h3 id=&#34;2020&#34;&gt;2020&lt;/h3&gt;&#xA;&lt;p&gt;Starting as a PhD student at Brandeis. :)&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<h3 id="2026">2026</h3>
+<dl>
+<dt>Organizing SIGTURK workshop at EACL 2026 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>I am serving as the Publicity Chair for the <a href="https://sigturk.github.io/workshop2026/">Second Workshop on Natural Language Processing for Turkic Languages</a> which will be held at EACL 2026 in Rabat, Morocco.</dd>
+<dd>This year the workshop will also feature a <a href="https://sigturk.github.io/sharedtask2026/">Shared Task on Terminology-Aware Machine Translation for English–Turkish Scientific Texts</a>. I encourage everyone to participate!</dd>
+</dl>
+<!-- Bla -->
+<h3 id="2025">2025</h3>
+<dl>
+<dt>LLM uncertainty quantification paper accepted to ICJNLP-AACL 2025 <span class="badge badge-paper">Paper</span></dt>
+<dd>My new paper, <a href="https://arxiv.org/abs/2509.22612"><em>From tests to effect sizes: Quantifying uncertainty and statistical variability in multilingual and multitask NLP evaluation benchmarks</em></a> was accepted to <a href="https://2025.aaclnet.org/">ICJNLP-AACL 2025</a>.</dd>
+<dd>The paper shows that conventional evaluation paradigms wildly underestimate the uncertainty and statistical variability of model performance, which can lead to overconfidence in rankings and overestimates of statistical significance.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Multilingual NER paper published at EMNLP 2025 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our lab&rsquo;s collaborative NER benchmarking paper, <a href="https://arxiv.org/abs/2412.09587"><em>OpenNER 1.0: Standardized Open-Access Named Entity Recognition Datasets in 50+ Languages</em></a> will be published at <a href="https://2025.emnlp.org/">EMNLP 2025</a>.</dd>
+<dd>Thanks to <a href="https://cpalenmichel.github.io/">Chester</a> for letting me use the data for my <a href="https://arxiv.org/abs/2509.22612">evaluation paper</a>.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Paper on morphological reasoning skills of LLMs accepted to NAACL 2025 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our collaboration paper, <em>Evaluating Morphological Compositional Generalization in Large Language Models</em> was accepted to <a href="https://aclanthology.org/2025.naacl-long.59/">NAACL 2025</a>. In it we show that LLMs struggle significantly when presented with out-of-distribution linguistic reasoning tasks.</dd>
+<dd>Thanks to <a href="https://www.mete.is/">Mete</a>, <a href="https://defnecirci.github.io/">Defne</a>, <a href="https://www.duyguataman.com">Duygu</a> and everyone else for the great collaboration!</dd>
+</dl>
+<!-- Bla -->
+<h3 id="2024">2024</h3>
+<dl>
+<dt>Organizing Multilingual Representation Learning workshop at EMNLP 2024 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>I am co-organizing the <a href="https://aclanthology.org/2024.mrl-1.0/">Fourth Workshop on Multilingual Representation Learning</a> at EMNLP 2024. The workshop brings together researchers working on multilingual representation learning with applications to a variety of tasks.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Organizing SIGTURK workshop at ACL 2024 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>I am co-organizing the <a href="https://aclanthology.org/2024.sigturk-1.0/">First Workshop on Natural Language Processing for Turkic Languages</a> at ACL 2024. The workshop brings together researchers working on NLP for Turkic languages and morphologically rich languages more generally.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Northern Sámi NMT paper published at ACL Findings 2024 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our paper, <em>Language Model Priors and Data Augmentation Strategies for Low-resource Machine Translation: A Case Study Using Finnish to Northern Sámi</em> was published at <a href="https://aclanthology.org/2024.findings-acl.768/">Findings of the ACL 2024</a>. Looking forward to presenting this at ACL 2024 in Bangkok!</dd>
+<dd>Thanks to <a href="https://www.skr.fi">Finnish Cultural Foundation</a> and the <a href="https://skr.fi/tietoa-meista/maakuntarahastot/lappi/">Lapland Regional Fund</a> for their support!</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>ParaNames published at LREC-COLING 2024 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>Our paper, <em>ParaNames 1.0: Creating an Entity Name Corpus for 400+ Languages using Wikidata</em>, was accepted to <a href="https://lrec-coling-2024.org/list-of-accepted-papers/">LREC-COLING 2024</a>. Check out the resource for free on <a href="https://www.github.com/bltlab/paranames">Github</a>.</dd>
+</dl>
+<!-- : Further applications abound, especially in the era of large language models. Happy hacking! -->
+<!-- : We describe the corpus, which covers over 16.8 million entities in 400+ languages, and experiment with using it as -->
+<!--     - a training corpus for name translation models -->
+<!--     - a supplemental resource for low-resource NER tasks. -->
+<dl>
+<dt>Shared task paper at VarDial 2024 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our team took part in the <em>DSL-ML - Multi-label classification of similar languages</em> shared task at <a href="https://sites.google.com/view/vardial-2024/shared-tasks/dsl-ml">VarDial 2024</a> and placed 1st on all the languages we participated in! Big thanks to <a href="https://cpalenmichel.github.io/">Chester Palen-Michel</a> for collaborating on this with me!</dd>
+</dl>
+<h3 id="2023">2023</h3>
+<dl>
+<dt>Internship at Google DeepMind <span class="badge badge-summer">Summer</span></dt>
+<dd>This summer/fall, I&rsquo;ll be working at <a href="https://www.deepmind.com">Google DeepMind</a> as a Student Researcher, focusing on out-of-distribution detection-style topics. Very excited to be working with LLMs in addition to my low-resource NLP work! Thanks GDM!</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Best Paper Award at Insights 2023 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our paper, <span class="title">What changes when you randomly choose BPE merge operations? Not much.</span> was accepted to the <a href="https://insights-workshop.github.io/2023/program/">Fourth Workshop on Insights from Negative Results in NLP</a>, held in conjunction with <a href="https://2023.eacl.org/">EACL 2023</a>.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Organizing CoCo4MT Shared Task at MTSummit 2023 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>I am co-organizing CoCo4MT 2023 Shared Task on Corpus Construction for Machine Translation, held in conjuction with <a href="https://aclanthology.org/events/mtsummit-2023/">MTSummit 2023</a>.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Extended abstract accepted at SIGTYP 2022 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our extended abstract, <a href="https://sigtyp.github.io/workshops/2022/sigtyp/papers/SIGTYP3.pdf"><em>ParaNames: A Massively Multilingual Entity Name Corpus</em></a> was accepted to SIGTYP 2022, held in conjunction with NAACL 2022.</dd>
+<dd>The abstract describes the work our lab has been doing on <em>ParaNames</em>, a multilingual entity name corpus that covers over 400 languages and 18 million entities.</dd>
+<dd>Feel free to also take a look at the <a href="https://arxiv.org/abs/2202.14035">preprint</a> and the <a href="https://www.github.com/bltlab/paranames">Github repository</a>.</dd>
+</dl>
+<h3 id="2022">2022</h3>
+<dl>
+<dt>Organizing the DCLRL workshop at LREC 2022 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>I&rsquo;ll be co-organizing the first <a href="https://dclrl.github.io">Workshop on Dataset Creation for Lower-Resourced Languages</a> held at LREC 2022. Hope to see you there!</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Internship at USC Information Sciences Institute <span class="badge badge-summer">Summer</span></dt>
+<dd>This summer, I&rsquo;ll be joining the <a href="https://www.isi.edu/">Information Sciences Institute</a> at the University of Southern California as a Visiting Research Assistant.</dd>
+<dd>Looking forward to spending the summer in sunny California!</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>One paper accepted at Findings of the ACL 2022 <span class="badge badge-paper">Paper</span></dt>
+<dd>Our new position paper, <a href="https://arxiv.org/abs/2202.12288"><em>Toward More Meaningful Resources for Lower-resourced Languages</em></a>, was accepted to Findings of the ACL for ACL 2022.</dd>
+<dd>Recommended reading for anyone working on lower-resourced languages, as well as anyone thinking of using Wikidata or WikiAnn out-of-the-box.</dd>
+</dl>
+<h3 id="2021">2021</h3>
+<dl>
+<dt>Two workshop papers accepted at EACL 2021 <span class="badge badge-workshop">Workshop</span></dt>
+<dd>My paper on morphology and low-resource NMT, <a href="https://www.aclweb.org/anthology/2021.eacl-srw.22/"><em>The Effectiveness of Morphology-aware Segmentation in Low-Resource Neural Machine Translation</em></a>, was accepted to the Student Research Workshop.</dd>
+<dd>Another paper of mine, <a href="https://arxiv.org/abs/2104.00558"><em>Mining Wikidata for Name Resources for African Languages</em></a>, was also accepted to the AfricaNLP Workshop.</dd>
+</dl>
+<h3 id="2020">2020</h3>
+<p>Starting as a PhD student at Brandeis. :)</p>
+<!-- Bla -->
+<dl>
+<dt>Deep Learning Summer School at MILA <span class="badge badge-summer">Summer</span></dt>
+<dd>I&rsquo;ll be joining the Montreal Institute of Learning Algorithms for Deep Learning &amp; Reinforcement Learning Summer school virtually this year.</dd>
+</dl>
+<!-- Bla -->
+<dl>
+<dt>Yiddish corpus paper accepted at LREC 2020 <span class="badge badge-paper">Paper</span></dt>
+<dd>My paper <em>A Multi-Orthography Parallel Corpus of Yiddish Nouns</em> was accepted at LREC 2020.</dd>
+<dd>Sadly, due to COVID, there was no opportunity to present the work in Marseille.</dd>
+<dd>You can still find the paper in the <a href="https://www.aclweb.org/anthology/2020.lrec-1.119/">proceedings</a>, though!</dd>
+</dl>
+<h3 id="2019">2019</h3>
+<p>Yay, starting as a MS student at Brandeis. :)</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>Research</title>
+      <link>https://cs.brandeis.edu/~jonne/research/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://cs.brandeis.edu/~jonne/research/</guid>
+      <description>&lt;p&gt;My research centers around &lt;strong&gt;low-resource and multilingual NLP/AI&lt;/strong&gt;.&#xA;I&amp;rsquo;m motivated by the observation that only about 100 out of 7,000 existing languages are supported by current AI and language technology.&lt;/p&gt;&#xA;&lt;p&gt;In addition to model building and resource creation, I seek to understand what types of tasks and languages our models perform well at, what they struggle with and what factors explain performance disparities.&lt;/p&gt;&#xA;&lt;p&gt;Finally, I see low-resource NLP as a case study in generalization. Can models learn to perform well in settings which do not resemble their training data but are still related to it in some way, e.g. linguistically?&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>My research centers around <strong>low-resource and multilingual NLP/AI</strong>.
+I&rsquo;m motivated by the observation that only about 100 out of 7,000 existing languages are supported by current AI and language technology.</p>
+<p>In addition to model building and resource creation, I seek to understand what types of tasks and languages our models perform well at, what they struggle with and what factors explain performance disparities.</p>
+<p>Finally, I see low-resource NLP as a case study in generalization. Can models learn to perform well in settings which do not resemble their training data but are still related to it in some way, e.g. linguistically?</p>
+<p>Concretely, my research can be divided into a few main themes and questions:</p>
+<ol>
+<li><strong>Learning in low-resource environments</strong> and <strong>bridging the linguistic divide</strong>:
+<ul>
+<li>How can we build models for low-resource languages/domains for a variety of NLP/AI tasks, such as machine translation, NER, and language identification?</li>
+<li>How can we create <em>high-quality benchmarks</em> for such low-resource languages/domains at a reasonable annotation cost?</li>
+<li>How can we generate synthetic data or inject external knowledge into our models when training data is unavailable?</li>
+</ul>
+</li>
+<li><strong>Large language models and their evaluation</strong>:
+<ul>
+<li>How can we build LLMs that are able to use <em>compositional reasoning</em> to generalize beyond the training data distribution?</li>
+<li>How can we <em>identify failure modes</em> where LLM performance degrades due to simple transformations that would not confuse humans?
+<ul>
+<li>Ex: prompt rewriting, MCQ ordering, transliteration, etc.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Uncertainty quantification in benchmarks and leaderboards</strong>:
+<ul>
+<li>How should we quantify the (statistical) significance of performance differences we observe when comparing models empirically?</li>
+<li>How can we generalize based on multiple task-specific measurements and assess the &ldquo;overall performance&rdquo; of different models?</li>
+<li>Do factors like test set size and leaderboard task choice impact the statistical precision of our results? How much?</li>
+</ul>
+</li>
+</ol>
+]]></content:encoded>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta http-equiv="X-Clacks-Overhead" content="GNU Terry Pratchett" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="shortcut icon" href="https://cs.brandeis.edu/~jonne/images/favicon.png" />
+<title>Why UNIX filters are cool | Jonne Sälevä</title>
+<meta name="title" content="Why UNIX filters are cool" />
+<meta name="description" content="When working on Linux, filters are a topic that often comes up. But what are they?
+Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.
+Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.
+What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle" />
+<meta name="author" content="Jonne Sälevä" />
+<meta name="keywords" content="" />
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<meta property="og:title" content="Why UNIX filters are cool" />
+<meta property="og:description" content="When working on Linux, filters are a topic that often comes up. But what are they?
+Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.
+Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.
+What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://cs.brandeis.edu/~jonne/blog/002-unix-filters/" />
+
+<meta property="og:image" content="https://cs.brandeis.edu/~jonne/images/social_card_bg_hu_1254371244b7c417.webp"/><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-07-25T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-07-25T00:00:00+00:00" /><meta property="og:site_name" content="Jonne Sälevä" />
+
+
+
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://cs.brandeis.edu/~jonne/images/social_card_bg_hu_1254371244b7c417.webp"/>
+<meta name="twitter:title" content="Why UNIX filters are cool"/>
+<meta name="twitter:description" content="When working on Linux, filters are a topic that often comes up. But what are they?
+Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.
+Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.
+What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle"/>
+<meta name="twitter:site" content="@jonnesaleva"/>
+
+
+
+<meta itemprop="name" content="Why UNIX filters are cool">
+<meta itemprop="description" content="When working on Linux, filters are a topic that often comes up. But what are they?
+Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.
+Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.
+What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle"><meta itemprop="datePublished" content="2022-07-25T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2022-07-25T00:00:00+00:00" />
+<meta itemprop="wordCount" content="741">
+
+<meta itemprop="image" content="https://cs.brandeis.edu/~jonne/images/social_card_bg_hu_1254371244b7c417.webp"/>
+
+
+<meta itemprop="keywords" content="" />
+
+<meta name="referrer" content="no-referrer-when-downgrade" />
+
+  
+  <link href="/~jonne/original.min.css" rel="stylesheet">
+
+  
+    
+    <link href="/~jonne/syntax.min.css" rel="stylesheet">
+  
+
+  
+
+  
+</head>
+
+<body>
+  <header><a class="skip-link" href="#main-content">Skip to main content</a>
+
+<a href="/~jonne/" class="title"><h1>Jonne Sälevä</h1></a>
+<nav>
+<a href="/~jonne/">Home</a>
+
+<a href="/~jonne/news">News</a>
+
+<a href="/~jonne/about-me">About me</a>
+
+<a href="/~jonne/research">Research</a>
+
+<a href="/~jonne/blog">Blog</a>
+
+
+
+
+
+
+
+
+
+</nav>
+</header>
+  <main id="main-content">
+
+<h1>Why UNIX filters are cool</h1>
+<p class="byline">
+  
+  <time datetime='2022-07-25' pubdate>
+    2022-07-25
+  </time>
+  
+  · Jonne Sälevä
+</p>
+
+<content>
+  <p>When working on Linux, <em>filters</em> are a topic that often comes up. But what are they?</p>
+<p>Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.</p>
+<p>Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.</p>
+<p>What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.
+They are a great example of the UNIX philosophy principle</p>
+<blockquote>
+*"Do one thing and do it well."*
+</blockquote>
+<p>which is often even given as a <em>definition</em> for UNIX philosophy itself.</p>
+<h3 id="converting-tsv-to-jsonl">Converting TSV to JSON(L)</h3>
+<p>In my work, I&rsquo;ve frequently got TSV data which would be easier to work with if it were in JSON(L).
+Finally, I found an easy conversion tool: <a href="https://visidata.org"><code>visidata</code></a>.</p>
+<p>Using <code>visidata</code>, we can write the following filter that takes input from STDIN, as well as some optional arguments, and outputs a neatly formatted JSON document:</p>
+
+
+
+
+
+<pre tabindex="0"><code>visidata \
+    -b --save-filetype &#34;jsonl&#34; \
+    &lt; ${1:-/dev/stdin} 2&gt;/dev/null \
+    | jq -c</code></pre><p>We can save this under <code>tsv2jsonl</code> and place it somewhere in our <code>$PATH</code>.</p>
+<p>If we have a TSV file like</p>
+
+
+
+
+
+<pre tabindex="0"><code>x	y
+foo	bar
+faa	ber
+fuu	box</code></pre><p>saved under <code>my_file.tsv</code>, then we can convert it to JSON by doing:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl
+
+{&#34;x&#34;:&#34;foo&#34;,&#34;y&#34;:&#34;bar&#34;}
+{&#34;x&#34;:&#34;faa&#34;,&#34;y&#34;:&#34;ber&#34;}
+{&#34;x&#34;:&#34;fuu&#34;,&#34;y&#34;:&#34;box&#34;}</code></pre><p>That&rsquo;s it! Just one filter to pipe TSV data through. No options or complex arguments to remember.</p>
+<h3 id="tokenizing-the-fields">Tokenizing the fields</h3>
+<p>Another task that often comes up is <em>tokenization</em>, which consists of converting strings of sentences into lists of substrings called <em>tokens</em>.</p>
+<p>Often tokenization is carried out using specialized libraries (e.g. <a href="https://github.com/moses-smt/mosesdecoder">Moses</a>).
+However, sensible default tokens can be obtained by crudely splitting on the space character or general whitespace.
+Sometimes we may also want to get a string &ndash; representing a sentence, a paragraph, or whatever &ndash; split into all of its individual <em>characters</em>.</p>
+<p>To facilitate these default behaviors, I made another filter called <a href="https://codeberg.org/jonne/filters/src/branch/main/jtok"><code>jtok</code></a>:</p>
+
+
+
+
+
+<pre tabindex="0"><code>Usage: jtok [OPTIONS]
+
+Options:
+  -t, --token-type [space|chars|whitespace|custom]
+  -a, --tokenize-all-fields
+  -f, --field-to-tokenize TEXT
+  -c, --custom-tokenizer-command TEXT
+  --help                          Show this message and exit.</code></pre><p>Out of the box, <code>jtok</code> offers (crude) tokenization based on spaces, general whitespaces, or individual characters.
+For example, the JSON file from above</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl
+
+{&#34;x&#34;:&#34;foo&#34;,&#34;y&#34;:&#34;bar&#34;}
+{&#34;x&#34;:&#34;faa&#34;,&#34;y&#34;:&#34;ber&#34;}
+{&#34;x&#34;:&#34;fuu&#34;,&#34;y&#34;:&#34;box&#34;}</code></pre><p>can be tokenized into <em>characters</em> using the following:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat my_file.tsv | tsv2jsonl | jtok -a
+
+{&#34;x&#34;:[&#34;f&#34;,&#34;o&#34;,&#34;o&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;a&#34;,&#34;r&#34;]}
+{&#34;x&#34;:[&#34;f&#34;,&#34;a&#34;,&#34;a&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;e&#34;,&#34;r&#34;]}
+{&#34;x&#34;:[&#34;f&#34;,&#34;u&#34;,&#34;u&#34;],&#34;y&#34;:[&#34;b&#34;,&#34;o&#34;,&#34;x&#34;]}</code></pre><p>Here we are taking care to use <code>jtok -a</code> to indicate that we want <em>all</em> fields tokenized.
+The tokenization into characters need not be explicitly specified, as it is the default option.
+This option can be controlled using the <code>--token-type</code> flag.</p>
+<p>We can also tokenize entire sentences if we have longer, non-toy data.
+Consider the following Finnish-English translation data from the <a href="https://github.com/facebookresearch/flores">FLoRes corpus</a>:</p>
+<p>Let&rsquo;s tokenize these sentences into tokens separated by whitespace like this:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; head -n1 flores_fin_eng.jsonl | jtok -a -t whitespace | jq -c
+
+{
+  &#34;fin&#34;: [&#34;Stanfordin&#34;, &#34;yliopiston&#34;, &#34;lääketieteen&#34;, &#34;laitoksen&#34;, ... ],
+  &#34;eng&#34;: [&#34;On&#34;, &#34;Monday,&#34;, &#34;scientists&#34;, &#34;from&#34;, &#34;the&#34;, &#34;Stanford&#34;, ... ]
+}</code></pre><h3 id="messing-with-the-tokenizer">Messing with the tokenizer</h3>
+<p>This seems pretty good, but may not work for some things such as the sentence:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json
+
+{
+    &#34;fin&#34;: &#34;Ai, hänkinkö kävelee kouluun?&#34;,
+    &#34;eng&#34;: &#34;Oh, he is walking to school as well?&#34;
+}</code></pre><p>which will not get correctly tokenized using just whitespace:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json | jtok -a -t whitespace
+
+{
+  &#34;fin&#34;: [&#34;Ai,&#34;, &#34;hänkinkö&#34;, &#34;kävelee&#34;, &#34;kouluun?&#34;],
+  &#34;eng&#34;: [&#34;Oh,&#34;, &#34;he&#34;, &#34;is&#34;, &#34;walking&#34;, &#34;to&#34;, &#34;school&#34;, &#34;as&#34;, &#34;well?&#34; ]
+}</code></pre><p>As we can see, some of the tokens have punctuation attached to them.</p>
+<p>To get around this, we&rsquo;ll need an external tokenizer, such as <a href="https://github.com/alvations/sacremoses">Sacremoses</a> which, by itself, works like a filter:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; echo &#34;Hello, world.&#34; | sacremoses tokenize
+
+Hello , world .</code></pre><p>We can use <code>sacremoses tokenize</code> as our custom tokenizer callback inside of <code>jtok</code>:</p>
+
+
+
+
+
+<pre tabindex="0"><code>&gt; cat walk_to_school.json | jtok -a -t custom -c &#34;sacremoses tokenize&#34;
+
+{
+  &#34;fin&#34;: [&#34;Ai&#34;, &#34;,&#34;, &#34;hänkinkö&#34;, &#34;kävelee&#34;, &#34;kouluun&#34;, &#34;?&#34;],
+  &#34;eng&#34;: [&#34;Oh&#34;, &#34;,&#34;, &#34;he&#34;, &#34;is&#34;, &#34;walking&#34;, &#34;to&#34;, &#34;school&#34;, &#34;as&#34;, &#34;well&#34;, &#34;?&#34;]
+}</code></pre><p>Now <code>sacremoses</code> handles the tokenization and the punctuation comes out correctly.</p>
+<h3 id="conclusion--vim-usage-tip">Conclusion &amp; vim usage tip</h3>
+<p>Finally, a tip for Vim users: filters are usable in Vim through <code>&quot;:.!your_filter.sh&quot;</code>.
+I learned this trick from this <a href="https://www.youtube.com/watch?v=7asa2lTcwKI">YouTube video</a> by <a href="https://github.com/rwxrob">rwxrob</a>.
+Check out his work for more info on how to integrate UNIX filters into your Vim workflow.</p>
+<p>That&rsquo;s it, thanks a lot for reading! 😁
+Feel free to take a look at the <a href="https://codeberg.org/jonne/filters">filter repository</a> on Codeberg if you want to learn more and also to get in touch over email.</p>
+
+</content>
+<p>
+  
+</p>
+
+
+
+
+  </main>
+  <footer><small>
+   | 
+</small></footer>
+
+    
+</body>
+
+</html>
