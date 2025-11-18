@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://cs.brandeis.edu/~jonne/sitemap.xml
+Sitemap: https://www.jonnesaleva.com/sitemap.xml

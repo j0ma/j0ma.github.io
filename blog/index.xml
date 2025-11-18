@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Blog on Jonne Sälevä</title>
-    <link>https://cs.brandeis.edu/~jonne/blog/</link>
+    <link>https://www.jonnesaleva.com/blog/</link>
     <description>Recent content in Blog on Jonne Sälevä</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 25 Jul 2022 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://cs.brandeis.edu/~jonne/blog/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://www.jonnesaleva.com/blog/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Why UNIX filters are cool</title>
-      <link>https://cs.brandeis.edu/~jonne/blog/002-unix-filters/</link>
+      <link>https://www.jonnesaleva.com/blog/002-unix-filters/</link>
       <pubDate>Mon, 25 Jul 2022 00:00:00 +0000</pubDate>
-      <guid>https://cs.brandeis.edu/~jonne/blog/002-unix-filters/</guid>
+      <guid>https://www.jonnesaleva.com/blog/002-unix-filters/</guid>
       <description>&lt;p&gt;When working on Linux, &lt;em&gt;filters&lt;/em&gt; are a topic that often comes up. But what are they?&lt;/p&gt;&#xA;&lt;p&gt;Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.&lt;/p&gt;&#xA;&lt;p&gt;Sometimes a file argument is also supported in addition to STDIN, but the basic principle is the same.&lt;/p&gt;&#xA;&lt;p&gt;What makes filters so cool? They might be small but their ingenuity lies in their small size and versatility.&#xA;They are a great example of the UNIX philosophy principle&lt;/p&gt;</description>
       <content:encoded><![CDATA[<p>When working on Linux, <em>filters</em> are a topic that often comes up. But what are they?</p>
 <p>Put simply, filters are small programs that take input from STDIN, do some processing on that input, and output the result to STDOUT.</p>
@@ -165,9 +165,9 @@ Feel free to take a look at the <a href="https://codeberg.org/jonne/filters">fil
     </item>
     <item>
       <title>More on research workflow</title>
-      <link>https://cs.brandeis.edu/~jonne/blog/001-research-workflow/</link>
+      <link>https://www.jonnesaleva.com/blog/001-research-workflow/</link>
       <pubDate>Tue, 22 Dec 2020 00:00:00 +0000</pubDate>
-      <guid>https://cs.brandeis.edu/~jonne/blog/001-research-workflow/</guid>
+      <guid>https://www.jonnesaleva.com/blog/001-research-workflow/</guid>
       <description>&lt;p&gt;I&amp;rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&amp;rsquo;ve now got some thoughts on a suitable research workflow.&#xA;Note that this is simply what works for me at this time, and may change in the future.&lt;/p&gt;&#xA;&lt;h3 id=&#34;what-was-worth-it&#34;&gt;What was worth it&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Experiment management software &amp;ndash; &lt;a href=&#34;https://guild.ai&#34;&gt;Guild.AI&lt;/a&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;The TUI for &lt;code&gt;guild compare&lt;/code&gt; is great, for example&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Scripts with &lt;em&gt;verbose&lt;/em&gt; arguments&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Do: &lt;code&gt;--input&lt;/code&gt;, &lt;code&gt;--output&lt;/code&gt;, &lt;code&gt;--mode&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Don&amp;rsquo;t: &lt;code&gt;-i&lt;/code&gt;, &lt;code&gt;-o&lt;/code&gt;, &lt;code&gt;-m&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Use &lt;a href=&#34;https://click.palletsprojects.com/en/7.x/&#34;&gt;click&lt;/a&gt; for creating CLIs&lt;/li&gt;&#xA;&lt;li&gt;Coreutils + command line tools like &lt;code&gt;grep&lt;/code&gt;, &lt;code&gt;sed&lt;/code&gt;, &lt;code&gt;awk&lt;/code&gt;, &lt;code&gt;cut&lt;/code&gt;, &lt;code&gt;paste&lt;/code&gt;, &lt;code&gt;...&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;In particular, the above tools are very, very useful inside little shell scripts&lt;/li&gt;&#xA;&lt;li&gt;Infrastructure-as-code is suprisingly worthwhile (e.g. &lt;code&gt;guild.yml&lt;/code&gt;)&lt;/li&gt;&#xA;&lt;li&gt;Symlinking is also very worthwhile&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Create an &lt;code&gt;experiments&lt;/code&gt; folder that is the sole entry point for data on that experiment&lt;/li&gt;&#xA;&lt;li&gt;Inside each experiment folder, simply symlink to data / checkpoints etc.&lt;/li&gt;&#xA;&lt;li&gt;This way, any script only needs to navigate to the folder of that particular experiment&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;what-i-never-found-the-use-case-for&#34;&gt;What I never found the use case for&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;A lot of examples seem to have train &amp;amp; evaluation done in the same script&lt;/li&gt;&#xA;&lt;li&gt;This is often not true when you train with one metric &amp;amp; evaluate using another.&lt;/li&gt;&#xA;&lt;li&gt;Case in point: evaluating MT / seq2seq outputs decoded using beam search&lt;/li&gt;&#xA;&lt;li&gt;I also haven&amp;rsquo;t yet felt the need for &lt;code&gt;cookiecutter&lt;/code&gt; or similar tools that produce boilerplate code.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
       <content:encoded><![CDATA[<p>I&rsquo;m now a semester into my Ph.D. at Brandeis, and after a couple of projects, I&rsquo;ve now got some thoughts on a suitable research workflow.
 Note that this is simply what works for me at this time, and may change in the future.</p>
